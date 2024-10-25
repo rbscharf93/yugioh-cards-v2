@@ -5,9 +5,10 @@
   Change these values as needed
 */
 const TWITCH_BROADCASTER = "aSpookyBlumpkin";
-const GLOBAL_COOLDOWN_DURATION = 10; // in seconds 
-const USER_COOLDOWN_DURATION = 30; // in seconds
+const GLOBAL_COOLDOWN_DURATION = 0; // in seconds 
+const USER_COOLDOWN_DURATION = 0; // in seconds
 const ANIMATION_DURATION = 8.03; // in seconds
+const RANDOM_COMMAND = 'randomcard';
 
 const cardsList =
   /*
@@ -21,6 +22,7 @@ const cardsList =
 ];
 
 const mainImg = document.getElementById('main-image');
+const mainAudio = document.getElementById('main-audio');
 
 let globalCooldown;
 let userCooldownsList = [];
@@ -39,17 +41,33 @@ const addUserCooldown = (user) => {
   userCooldownsList.unshift(newUserCooldown);
 };
 
-const showCard = (card) => {
+const playSound = () => {
+  mainAudio.muted = false;
+  mainAudio.play().catch((err) => {
+    console.log(err);
+  });
+};
+
+const showCard = (card, user) => {
+  addGlobalCooldown();
+  addUserCooldown(user);
   mainImg.src = card.url;
   mainImg.classList.remove('hidden');
   setTimeout(() => {
     mainImg.src = '';
     mainImg.classList.add('hidden');
   }, ANIMATION_DURATION*1000);
+  playSound();
 };
 
 ComfyJS.onCommand = ( user, command ) => {
   const trimmedText = command.trim();
+  if (trimmedText === RANDOM_COMMAND) {
+    const ranNum = Math.floor(Math.random() * cardsList.length);
+    const card = cardsList[ranNum];
+    showCard(card, user);
+    return;
+  };
   const card = cardsList.find((element) => {
     return element.cmd === trimmedText;
   });
@@ -63,8 +81,6 @@ ComfyJS.onCommand = ( user, command ) => {
   if (globalCooldown || isUserCooldown) {
     return;
   }
-  addGlobalCooldown();
-  addUserCooldown(user);
   showCard(card);
 };
 
