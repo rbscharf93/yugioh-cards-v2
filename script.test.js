@@ -5,9 +5,10 @@
   Change these values as needed
 */
 const TWITCH_BROADCASTER = "aSpookyBlumpkin";
-const GLOBAL_COOLDOWN_DURATION = 10; // in seconds 
-const USER_COOLDOWN_DURATION = 20; // in seconds
+const GLOBAL_COOLDOWN_DURATION = 0; // in seconds 
+const USER_COOLDOWN_DURATION = 0; // in seconds
 const ANIMATION_DURATION = 8.03; // in seconds
+const RANDOM_COMMAND = 'randomcard';
 
 const cardsList =
   /*
@@ -21,6 +22,7 @@ const cardsList =
 ];
 
 const mainImg = document.getElementById('main-image');
+const mainAudio = document.getElementById('main-audio');
 
 let globalCooldown;
 let userCooldownsList = [];
@@ -30,6 +32,8 @@ let i = 0;
 const addGlobalCooldown = () => {
   globalCooldown = setTimeout(() => {
     globalCooldown = null;
+    logTime();
+    console.log('Global cooldown removed');
   }, GLOBAL_COOLDOWN_DURATION*1000);
 };
 
@@ -44,13 +48,23 @@ const addUserCooldown = (user) => {
   userCooldownsList.unshift(newUserCooldown);
 };
 
-const showCard = (card) => {
+const playSound = () => {
+  mainAudio.muted = false;
+  mainAudio.play().catch((err) => {
+    console.log(err);
+  });
+};
+
+const showCard = (card, user) => {
+  addGlobalCooldown();
+  addUserCooldown(user);
   mainImg.src = card.url;
   mainImg.classList.remove('hidden');
   setTimeout(() => {
     mainImg.src = '';
     mainImg.classList.add('hidden');
   }, ANIMATION_DURATION*1000);
+  playSound();
 };
 
 const logTime = () => {
@@ -62,6 +76,12 @@ ComfyJS.onCommand = ( user, command ) => {
   console.log('\n');
   logTime();
   console.log(`${user} used ${command}`);
+  if (trimmedText === RANDOM_COMMAND) {
+    const ranNum = Math.floor(Math.random() * cardsList.length);
+    const card = cardsList[ranNum];
+    showCard(card, user);
+    return;
+  };
   const card = cardsList.find((element) => {
     return element.cmd === trimmedText;
   });
@@ -81,9 +101,7 @@ ComfyJS.onCommand = ( user, command ) => {
     console.log(`${isUserCooldown.username} is on user cooldown`);
     return;
   }
-  addGlobalCooldown();
-  addUserCooldown(user);
-  showCard(card);
+  showCard(card, user);
   console.log(`${card.cmd} has been played...`);
   console.log('Global cooldown:');
   console.log(`${globalCooldown ? 'True' : 'False'}`);
@@ -97,6 +115,9 @@ document.addEventListener('DOMContentLoaded', () => {
       i = 0;
     } else {
       i++;
+    }
+    if (i % 60 === 0) {
+      logTime();
     }
   }, 1000);
 });
